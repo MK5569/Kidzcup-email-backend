@@ -1,0 +1,16 @@
+{
+  "name": "kidzcup-email-backend",
+  "version": "1.0.0",
+  "description": "Kleiner Webhook-Server, der bei Turnier-Ereignissen echte E-Mails über Resend verschickt.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
