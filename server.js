@@ -32,6 +32,19 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ""; // eure eigene Adresse, für 
 const app = express();
 app.use(express.json());
 
+// CORS: erlaubt der KIDZCUP-App (läuft auf einer anderen Domain als dieser Server),
+// diesen Server per fetch() aufzurufen. Ohne das blockiert der Browser die Anfrage
+// stillschweigend, noch bevor sie hier überhaupt ankommt.
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type, X-Webhook-Secret");
+  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 function pruefeSecret(req, res, next) {
   if (!WEBHOOK_SECRET) return next(); // kein Secret gesetzt -> keine Prüfung (nur für lokale Tests empfohlen)
   if (req.header("X-Webhook-Secret") !== WEBHOOK_SECRET) {
