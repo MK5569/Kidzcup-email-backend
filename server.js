@@ -88,7 +88,7 @@ function baueMail(ereignis, anmeldung, turnier) {
       betreff: `Teilnahme bestätigt – ${turnier?.name || "KIDZCUP"}`,
       text:
         `Hallo ${anmeldung.trainer || ""},\n\n` +
-        `eure Zahlung ist bei uns eingegangen – die Teilnahme von ${anmeldung.verein} (Jahrgang ${anmeldung.jahrgang}, ${anmeldung.jugend}) ` +
+        `${anmeldung.gebuehrenfrei ? "eure Mannschaft ist von der Startgebühr befreit, ihr müsst nichts bezahlen" : "eure Zahlung ist bei uns eingegangen"} – die Teilnahme von ${anmeldung.verein} (Jahrgang ${anmeldung.jahrgang}, ${anmeldung.jugend}) ` +
         `am Turnier "${turnier?.name}" am ${termin} steht damit fest.\n\nWir freuen uns auf euch!\n\n${gruss}`,
     },
     ablehnung: {
