@@ -101,6 +101,15 @@ function baueMail(ereignis, anmeldung, turnier) {
         bauZahlungshinweis(anmeldung, turnier) +
         `Ohne fristgerechte Zahlung können wir die Teilnahme leider nicht bestätigen.\n\n${gruss}`,
     },
+    frist_verlaengert: {
+      betreff: `Neue Zahlungsfrist für ${turnier?.name || "euer Turnier"}`,
+      text:
+        `Hallo ${anmeldung.trainer || ""},\n\n` +
+        `eure Zahlungsfrist für die Anmeldung von ${anmeldung.verein} für "${turnier?.name}" (${termin}) wurde ` +
+        `um weitere 3 Tage verlängert. Bitte zahlt jetzt bis spätestens ${frist} die Startgebühr von ${turnier?.preis} €.\n\n` +
+        bauZahlungshinweis(anmeldung, turnier) +
+        `Ohne fristgerechte Zahlung können wir die Teilnahme leider nicht bestätigen.\n\n${gruss}`,
+    },
     bestaetigung: {
       betreff: `Teilnahme bestätigt – ${turnier?.name || "KIDZCUP"}`,
       text:
