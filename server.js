@@ -132,6 +132,7 @@ function baueMail(ereignis, anmeldung, turnier) {
       text:
         `Hallo ${anmeldung.trainer || ""},\n\n` +
         `leider können wir die Anmeldung von ${anmeldung.verein} für "${turnier?.name}" (${termin}) nicht bestätigen.\n\n` +
+        (anmeldung.ablehnungsgrund ? `Grund: ${anmeldung.ablehnungsgrund}\n\n` : "") +
         `Bitte meldet euch kurz bei uns, falls ihr dazu Rückfragen habt.\n\n${gruss}`,
     },
     warteliste_aufnahme: {
