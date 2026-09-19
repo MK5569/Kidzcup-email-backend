@@ -76,6 +76,16 @@ function bauZahlungshinweis(anmeldung, turnier) {
 }
 
 // Muss inhaltlich zu den Vorlagen in der App (mailVorlage) passen.
+const STATUS_LABEL_KURZ = {
+  eingegangen: "Eingegangen (neu)",
+  ausstehend: "Zahlung ausstehend",
+  zahlung_gemeldet: "Zahlung gemeldet",
+  abgelaufen: "Frist abgelaufen",
+  bestaetigt: "Bestätigt",
+  warteliste: "Warteliste",
+  abgelehnt: "Abgelehnt",
+};
+
 function baueMail(ereignis, anmeldung, turnier) {
   const frist = anmeldung.frist ? formatDatumZeit(anmeldung.frist) : "";
   const termin = turnier ? `${turnier.datum} in ${turnier.ort}` : "";
@@ -118,11 +128,11 @@ function baueMail(ereignis, anmeldung, turnier) {
         `am Turnier "${turnier?.name}" am ${termin} steht damit fest.\n\nWir freuen uns auf euch!\n\n${gruss}`,
     },
     ablehnung: {
-      betreff: `Zahlung nicht bestätigt – ${turnier?.name || "KIDZCUP"}`,
+      betreff: `Anmeldung nicht bestätigt – ${turnier?.name || "KIDZCUP"}`,
       text:
         `Hallo ${anmeldung.trainer || ""},\n\n` +
-        `leider konnten wir die gemeldete Zahlung für "${turnier?.name}" (${anmeldung.verein}) nicht zuordnen bzw. bestätigen.\n\n` +
-        `Bitte meldet euch kurz bei uns, damit wir das gemeinsam klären können.\n\n${gruss}`,
+        `leider können wir die Anmeldung von ${anmeldung.verein} für "${turnier?.name}" (${termin}) nicht bestätigen.\n\n` +
+        `Bitte meldet euch kurz bei uns, falls ihr dazu Rückfragen habt.\n\n${gruss}`,
     },
     warteliste_aufnahme: {
       betreff: `Platz frei geworden – ${turnier?.name || "KIDZCUP"}`,
@@ -148,14 +158,32 @@ function baueMail(ereignis, anmeldung, turnier) {
         `Status: ${anmeldung.status === "warteliste" ? "Warteliste" : "Ausstehend (Zahlungsfrist " + frist + ")"}\n\n` +
         `Anmeldecode: ${anmeldung.id}`,
     },
+    // Geht ebenfalls an EUCH, nicht an den Verein - der Verein hat sich ja gerade selbst abgemeldet.
+    teilnahme_abgesagt: {
+      betreff: `Absage: ${anmeldung.verein} – ${turnier?.name || "KIDZCUP"}`,
+      text:
+        `Ein Verein hat seine Anmeldung selbst über den Anmeldecode gelöscht:\n\n` +
+        `Turnier: ${turnier?.name || "-"} (${termin})\n` +
+        `Verein: ${anmeldung.verein}\n` +
+        `Trainer: ${anmeldung.trainer}\n` +
+        `Jahrgang/Jugend: ${anmeldung.jahrgang} / ${anmeldung.jugend}\n` +
+        `E-Mail: ${anmeldung.email}\n` +
+        `Telefon: ${anmeldung.telefon}\n` +
+        `Status vor der Absage: ${STATUS_LABEL_KURZ[anmeldung.status] || anmeldung.status}\n` +
+        (["bestaetigt", "zahlung_gemeldet"].includes(anmeldung.status)
+          ? `\n⚠️ Diese Anmeldung war bereits bezahlt bzw. als bezahlt gemeldet - ggf. Rückerstattung prüfen!\n`
+          : "") +
+        `\nAnmeldecode (jetzt gelöscht): ${anmeldung.id}`,
+    },
   };
 
   return vorlagen[ereignis] || null;
 }
 
-// Für die meisten Ereignisse ist der Verein der Empfänger, bei "neue_anmeldung" seid ihr es selbst.
+// Für die meisten Ereignisse ist der Verein der Empfänger, bei "neue_anmeldung" und
+// "teilnahme_abgesagt" seid ihr (der Admin) selbst der Empfänger.
 function empfaengerFuer(ereignis, anmeldung) {
-  if (ereignis === "neue_anmeldung") return ADMIN_EMAIL;
+  if (ereignis === "neue_anmeldung" || ereignis === "teilnahme_abgesagt") return ADMIN_EMAIL;
   return anmeldung.email;
 }
 
@@ -173,7 +201,11 @@ app.post("/webhook", pruefeSecret, async (req, res) => {
 
   const empfaenger = empfaengerFuer(ereignis, anmeldung);
   if (!empfaenger) {
-    return res.status(400).json({ fehler: ereignis === "neue_anmeldung" ? "ADMIN_EMAIL ist nicht gesetzt." : "anmeldung.email fehlt." });
+    return res.status(400).json({
+      fehler: ereignis === "neue_anmeldung" || ereignis === "teilnahme_abgesagt"
+        ? "ADMIN_EMAIL ist nicht gesetzt."
+        : "anmeldung.email fehlt.",
+    });
   }
 
   if (!RESEND_API_KEY) {
