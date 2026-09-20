@@ -145,6 +145,15 @@ function baueMail(ereignis, anmeldung, turnier) {
         bauZahlungshinweis(anmeldung, turnier) +
         `Ohne fristgerechte Zahlung wird der Platz erneut freigegeben.\n\n${gruss}`,
     },
+    frist_verpasst_warteliste: {
+      betreff: `Auf Warteliste – Zahlungsfrist verpasst (${turnier?.name || "KIDZCUP"})`,
+      text:
+        `Hallo ${anmeldung.trainer || ""},\n\n` +
+        `für die Anmeldung von ${anmeldung.verein} zum Turnier "${turnier?.name}" (${termin}) ist die Zahlungsfrist leider verstrichen, ` +
+        `ohne dass bei uns eine Zahlung eingegangen ist. Der Platz wurde daher freigegeben.\n\n` +
+        `Ihr steht jetzt auf der Warteliste - sobald wieder ein Platz frei wird, rückt ihr automatisch nach und erhaltet dann erneut 3 Tage Zeit zur Zahlung.\n\n` +
+        `Falls die Zahlung doch schon unterwegs ist oder ihr Rückfragen habt, meldet euch gerne kurz bei uns.\n\n${gruss}`,
+    },
     // Anders als die übrigen Vorlagen geht diese an EUCH (den Veranstalter), nicht an den Verein.
     neue_anmeldung: {
       betreff: `Neue Anmeldung: ${anmeldung.verein} – ${turnier?.name || "KIDZCUP"}`,
