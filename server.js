@@ -1,7 +1,7 @@
 // KIDZCUP E-Mail-Backend
 //
 // Ein winziger Server mit genau einem Zweck: Wenn die KIDZCUP-App ein Ereignis meldet
-// (Zahlung bestätigt, abgelehnt, Erinnerung, Warteliste-Aufnahme), verschickt dieser
+// (Zahlung bestätigt, abgelehnt, Erinnerung, Warteliste-Aufnahme, WhatsApp-Gruppe), verschickt dieser
 // Server automatisch eine E-Mail über den Anbieter Resend (https://resend.com).
 //
 // Warum überhaupt ein eigener Server?
@@ -74,6 +74,18 @@ function bauZahlungshinweis(anmeldung, turnier) {
     : "";
   return zahlLinkZeile || bankZeile ? `${zahlLinkZeile}${bankZeile}` : "(Zahlungsmöglichkeit beim Veranstalter erfragen)\n\n";
 }
+
+// Datum schön lesbar, z. B. "18. Oktober 2026" (Turnierdatum kommt als "2026-10-18").
+function formatDatumLang(iso) {
+  if (!iso) return "";
+  try {
+    return new Intl.DateTimeFormat("de-DE", { day: "numeric", month: "long", year: "numeric" }).format(new Date(iso));
+  } catch {
+    return String(iso);
+  }
+}
+
+const WHATSAPP_GRUPPENLINK_MUSTER = /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+/;
 
 // Muss inhaltlich zu den Vorlagen in der App (mailVorlage) passen.
 const STATUS_LABEL_KURZ = {
@@ -154,6 +166,18 @@ function baueMail(ereignis, anmeldung, turnier) {
         `Ihr steht jetzt auf der Warteliste - sobald wieder ein Platz frei wird, rückt ihr automatisch nach und erhaltet dann erneut 3 Tage Zeit zur Zahlung.\n\n` +
         `Falls die Zahlung doch schon unterwegs ist oder ihr Rückfragen habt, meldet euch gerne kurz bei uns.\n\n${gruss}`,
     },
+    // Einladung in die WhatsApp-Gruppe des Turniers - wird im Admin-Bereich per Button ausgelöst.
+    whatsapp_gruppe: {
+      betreff: `WhatsApp-Gruppe zum ${turnier?.name || "KIDZCUP"} – jetzt beitreten`,
+      text:
+        `Hallo ${anmeldung.trainer || ""},\n\n` +
+        `für das Turnier "${turnier?.name}"` +
+        (turnier?.datum ? ` am ${formatDatumLang(turnier.datum)}${turnier?.ort ? ` in ${turnier.ort}` : ""}` : "") +
+        ` haben wir eine WhatsApp-Gruppe für alle Trainer eingerichtet. Dort teilen wir kurzfristige Infos rund um den Turniertag ` +
+        `(z. B. Spielplan, Anfahrt, Änderungen).\n\n` +
+        `Hier könnt ihr mit ${anmeldung.verein} beitreten:\n${turnier?.whatsappGruppenlink || ""}\n\n` +
+        `Hinweis: In der Gruppe ist eure Handynummer für die anderen Mitglieder sichtbar. Der Beitritt ist freiwillig.\n\n${gruss}`,
+    },
     // Anders als die übrigen Vorlagen geht diese an EUCH (den Veranstalter), nicht an den Verein.
     neue_anmeldung: {
       betreff: `Neue Anmeldung: ${anmeldung.verein} – ${turnier?.name || "KIDZCUP"}`,
@@ -202,6 +226,10 @@ app.post("/webhook", pruefeSecret, async (req, res) => {
 
   if (!ereignis || !anmeldung) {
     return res.status(400).json({ fehler: "ereignis und anmeldung sind erforderlich." });
+  }
+
+  if (ereignis === "whatsapp_gruppe" && !WHATSAPP_GRUPPENLINK_MUSTER.test(turnier?.whatsappGruppenlink || "")) {
+    return res.status(400).json({ fehler: "Gültiger WhatsApp-Gruppenlink fehlt." });
   }
 
   const mail = baueMail(ereignis, anmeldung, turnier);
